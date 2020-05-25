@@ -167,6 +167,7 @@ void ClientConnection::WaitForRequests() {
   } else if (COMMAND("LIST")) {
 
     // To be implemented by students
+    list();
   } else if (COMMAND("SYST")) {
 
     fprintf(fd, "215 UNIX Type: L8.\n");
@@ -308,6 +309,40 @@ void ClientConnection::stor(void) {
 
     fprintf(fd, "226 Closing data connection. Operation successfully completed.\n");
     fclose(file);
+    close(data_socket);
+  }
+}
+
+void ClientConnection::list(void) {
+  struct sockaddr_in socket_address;
+  socklen_t socket_address_len = sizeof(socket_address);
+  char buffer[MAX_BUFF];
+  std::string ls_content;
+  std::string ls = "ls -l";
+
+
+  ls.append(" 2>&1"); //To redirect stderr to stdout
+
+  fprintf(fd, "125 Data connection already open; transfer starting\n");
+  FILE* file = popen(ls.c_str(), "r");
+
+  if (!file) {
+    fprintf(fd, "450 Requested file action not taken. File unavailable.\n");
+    close(data_socket);
+  } else {
+    if (passive)
+      data_socket = accept(data_socket, (struct sockaddr*)&socket_address,
+                           &socket_address_len);
+
+    while (!feof(file))
+        if (fgets(buffer, MAX_BUFF, file) != NULL)
+          ls_content.append(buffer);
+
+    //  printf("ls_content : %s\n", ls_content.c_str());
+
+    send(data_socket, ls_content.c_str(), ls_content.size(), 0);
+    fprintf(fd, "250 Closing data connection. Requested file action successful.\n");
+    pclose(file);
     close(data_socket);
   }
 }

@@ -19,6 +19,7 @@ class ClientConnection {
    void retr(void);
    void passv(void);
    void stor(void);
+   void list(void);
 
  private:
    bool ok;  // This variable is a flag that avois that the
