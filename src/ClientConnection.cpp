@@ -210,7 +210,7 @@ void ClientConnection::port(void) {
   unsigned host = host_b[3]<<24 | host_b[2]<<16 |
       host_b[1]<<8 | host_b[0];
   unsigned port = port_b[0] << 8 | port_b[1];
-  printf("Puerto: %u\n", port);
+//  printf("Puerto: %u\n", port);
   data_socket = connect_TCP(host,port);
 
   fprintf(fd, "200 OK\n");
@@ -317,7 +317,7 @@ void ClientConnection::list(void) {
   struct sockaddr_in socket_address;
   socklen_t socket_address_len = sizeof(socket_address);
   char buffer[MAX_BUFF];
-  std::string ls_content;
+  std::string ls_content = "";
   std::string ls = "ls -l";
 
 
@@ -330,10 +330,10 @@ void ClientConnection::list(void) {
     fprintf(fd, "450 Requested file action not taken. File unavailable.\n");
     close(data_socket);
   } else {
-    if (passive)
+    if (passive) {
       data_socket = accept(data_socket, (struct sockaddr*)&socket_address,
                            &socket_address_len);
-
+    }
     while (!feof(file))
         if (fgets(buffer, MAX_BUFF, file) != NULL)
           ls_content.append(buffer);
