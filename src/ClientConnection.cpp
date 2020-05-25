@@ -318,7 +318,7 @@ void ClientConnection::list(void) {
   socklen_t socket_address_len = sizeof(socket_address);
   char buffer[MAX_BUFF];
   std::string ls_content = "";
-  std::string ls = "ls -l";
+  std::string ls = "ls";
 
 
   ls.append(" 2>&1"); //To redirect stderr to stdout
