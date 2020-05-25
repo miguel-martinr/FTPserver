@@ -210,7 +210,7 @@ void ClientConnection::port(void) {
   unsigned host = host_b[3]<<24 | host_b[2]<<16 |
       host_b[1]<<8 | host_b[0];
   unsigned port = port_b[0] << 8 | port_b[1];
-//  printf("Puerto: %u\n", port);
+
   data_socket = connect_TCP(host,port);
 
   fprintf(fd, "200 OK\n");
