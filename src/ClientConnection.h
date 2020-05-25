@@ -16,6 +16,9 @@ class ClientConnection {
    void WaitForRequests();
    void stop();
    void port(void);
+   void retr(void);
+   void passv(void);
+   void stor(void);
 
  private:
    bool ok;  // This variable is a flag that avois that the
@@ -33,7 +36,7 @@ class ClientConnection {
    int data_socket;         // Data socket descriptor;
    int control_socket;      // Control socket descriptor;
    bool parar;
-   bool passive;            // Modo 
+   bool passive;            // Modo
 };
 
 #endif

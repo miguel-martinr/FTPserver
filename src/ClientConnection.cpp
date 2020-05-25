@@ -85,6 +85,7 @@ int connect_TCP( uint32_t address,  uint16_t  port) {
      sin.sin_addr.s_addr = address;
      sin.sin_port = htons(port);
 
+
      if (connect(s, (struct sockaddr*)&sin, sizeof(sin)) < 0) {
        errexit("No se puede conectar con %s: %s\n", inet_ntoa(sin.sin_addr),
                strerror(errno));
@@ -125,6 +126,7 @@ void ClientConnection::WaitForRequests() {
     return;
   }
 
+
   fprintf(fd, "220 Service ready\n");
 
   while(!parar) {
@@ -135,58 +137,58 @@ void ClientConnection::WaitForRequests() {
   if (COMMAND("USER")) {
 	  fscanf(fd, "%s", arg);
 	  fprintf(fd, "331 User name ok, need password\n");
-  }  else if (COMMAND("PWD")) {
+  } else if (COMMAND("PWD")) {
 
-  }  else if (COMMAND("PASS")) {
-     fscanf(fd, "%s", arg);
-     if(strcmp(arg,"1234") == 0) {
-     fprintf(fd, "230 User logged in\n");
-     } else{
-       fprintf(fd, "530 Not logged in.\n");
-       parar = true;
-      }
+  } else if (COMMAND("PASS")) {
+
+    fscanf(fd, "%s", arg);
+    if(strcmp(arg,"1234") == 0) {
+      fprintf(fd, "230 User logged in\n");
+    } else{
+      fprintf(fd, "530 Not logged in.\n");
+      parar = true;
     }
+  } else if (COMMAND("PORT")) {
 
-      else if (COMMAND("PORT")) {
 	  // To be implemented by students
+    port();
+  } else if (COMMAND("PASV")) {
 
-      }
-      else if (COMMAND("PASV")) {
-	  // To be implemented by students
-      }
-      else if (COMMAND("STOR") ) {
-	    // To be implemented by students
-      }
-      else if (COMMAND("RETR")) {
-	   // To be implemented by students
-      }
-      else if (COMMAND("LIST")) {
-	   // To be implemented by students
-      }
-      else if (COMMAND("SYST")) {
-           fprintf(fd, "215 UNIX Type: L8.\n");
-      }
+    // To be implemented by students
+    passv();
+  } else if (COMMAND("STOR") ) {
 
-      else if (COMMAND("TYPE")) {
-	  fscanf(fd, "%s", arg);
+    // To be implemented by students
+    stor();
+  } else if (COMMAND("RETR")) {
+
+    // To be implemented by students
+    retr();
+  } else if (COMMAND("LIST")) {
+
+    // To be implemented by students
+  } else if (COMMAND("SYST")) {
+
+    fprintf(fd, "215 UNIX Type: L8.\n");
+  } else if (COMMAND("TYPE")) {
+
+    fscanf(fd, "%s", arg);
 	  fprintf(fd, "200 OK\n");
-      }
+  } else if (COMMAND("QUIT")) {
 
-      else if (COMMAND("QUIT")) {
-        fprintf(fd, "221 Service closing control connection. Logged out if appropriate.\n");
-        close(data_socket);
-        parar=true;
-        break;
-      }
+    fprintf(fd, "221 Service closing control connection. Logged out if appropriate.\n");
+    close(data_socket);
+    parar=true;
+    break;
+  } else  {
 
-      else  {
-	    fprintf(fd, "502 Command not implemented.\n"); fflush(fd);
-	    printf("Comando : %s %s\n", command, arg);
-	    printf("Error interno del servidor\n");
+    fprintf(fd, "502 Command not implemented.\n"); fflush(fd);
+	  printf("Comando : %s %s\n", command, arg);
+	  printf("Error interno del servidor\n");
 
-      }
+  }
 
-    }
+}
 
     fclose(fd);
 
@@ -207,10 +209,105 @@ void ClientConnection::port(void) {
   unsigned host = host_b[3]<<24 | host_b[2]<<16 |
       host_b[1]<<8 | host_b[0];
   unsigned port = port_b[0] << 8 | port_b[1];
-
+  printf("Puerto: %u\n", port);
   data_socket = connect_TCP(host,port);
 
   fprintf(fd, "200 OK\n");
+}
 
+void ClientConnection::retr(void) {
+  fscanf(fd, "%s", arg);           // Reads file name
+  //printf("Fichero: %s\n", arg);
+  FILE* file = fopen(arg, "rb");    //Opens the file
 
+  if (!file) {
+    fprintf(fd, "450 Requested file action not taken. File unavailable.\n");
+    close(data_socket);
+  } else {
+    fprintf(fd, "150 File status okay - About to open data connection.\n");
+    struct sockaddr_in socket_address;
+    socklen_t socket_address_len = sizeof(socket_address);
+    char buffer[MAX_BUFF];
+    int n;
+
+    if (passive) {
+      data_socket = accept(data_socket,(struct sockaddr*)&socket_address,
+                                        &socket_address_len);
+    }
+
+    do {
+      n = fread(buffer, sizeof(char), MAX_BUFF, file);
+      send(data_socket, buffer, n, 0);
+    } while (n == MAX_BUFF);
+
+    fprintf(fd, "226 Closing data connection. Requested file action successful\n");
+    fclose(file);
+    close(data_socket);
+  }
+}
+
+void ClientConnection::passv(void) {
+  passive = true;
+
+  struct sockaddr_in sin, sock_address;
+  socklen_t sock_address_len = sizeof(sock_address);
+  int s = socket(AF_INET, SOCK_STREAM, 0);
+
+  if (s < 0) {
+    errexit("No se puedo crear el socket: %s\n", strerror(errno));
+  } else {
+      int sv_address = 16777343; // Server address (localhost 127.0.0.1)
+      memset(&sin, 0, sizeof(sin));
+      sin.sin_family = AF_INET;
+      sin.sin_addr.s_addr = sv_address;
+      sin.sin_port = 0; //Cualquier puerto abierto (?)
+      if (bind(s, (struct sockaddr*)&sin, sizeof(sin)) < 0) {
+        errexit("No se ha podido hacer bind con el puerto: %s\n", strerror(errno));
+      } else {
+        if (listen(s, 5) < 0) {
+          errexit("Fallo en el listen: %s\n", strerror(errno));
+        } else {
+          getsockname(s, (struct sockaddr*)&sock_address, &sock_address_len);
+          fprintf(fd, "227 Entering Passive Mode (%d,%d,%d,%d,%d,%d).\n",
+          (unsigned int)(sv_address & 0xff),
+          (unsigned int)((sv_address >> 8) & 0xff),
+          (unsigned int)((sv_address >> 16) & 0xff),
+          (unsigned int)((sv_address >> 24) & 0xff),
+          (unsigned int)(sock_address.sin_port & 0xff),
+          (unsigned int)(sock_address.sin_port >> 8));
+          data_socket = s;
+        }
+      }
+  }
+}
+
+void ClientConnection::stor(void) {
+  fscanf(fd, "%s", arg);
+  FILE* file = fopen(arg, "wb");
+  if (!file) {
+    fprintf(fd, "450 Requested file action not taken. File unavailable.\n");
+    close(data_socket);
+  } else {
+    fprintf(fd, "150 File status okay; openning data connection.\n");
+    fflush(fd);
+
+    struct sockaddr_in socket_address;
+    socklen_t socket_address_len = sizeof(socket_address);
+    char buffer[MAX_BUFF];
+    int n;
+
+    if (passive) {
+      data_socket = accept(data_socket, (struct sockaddr*)&socket_address,
+                           &socket_address_len);
+    }
+
+    do {
+      n = recv(data_socket, buffer, MAX_BUFF, 0);
+      fwrite(buffer, sizeof(char), n, file);
+    } while (n == MAX_BUFF);
+
+    fprintf(fd, "226 Closing data connection. Operation successfully completed.\n");
+    fclose(file);
+    close(data_socket);
+  }
 }
