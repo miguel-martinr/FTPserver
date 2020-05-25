@@ -94,18 +94,18 @@ void FTPServer::run() {
     int ssock;
     socklen_t alen = sizeof(fsin);
     msock = define_socket_TCP(port);  // This function must be implemented by you.
+
+
     while (1) {
-	pthread_t thread;
-        ssock = accept(msock, (struct sockaddr *)&fsin, &alen);
-        if(ssock < 0)
-            errexit("Fallo en el accept: %s\n", strerror(errno));
+	    pthread_t thread;
+      ssock = accept(msock, (struct sockaddr *)&fsin, &alen);
+      if(ssock < 0)
+        errexit("Fallo en el accept: %s\n", strerror(errno));
 
-	ClientConnection *connection = new ClientConnection(ssock);
-
-	// Here a thread is created in order to process multiple
-	// requests simultaneously
-	pthread_create(&thread, NULL, run_client_connection, (void*)connection);
-
-    }
+	    ClientConnection *connection = new ClientConnection(ssock);
+	    // Here a thread is created in order to process multiple
+	    // requests simultaneously
+	    pthread_create(&thread, NULL, run_client_connection, (void*)connection);
+   }
 
 }

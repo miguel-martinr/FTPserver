@@ -155,7 +155,7 @@ void ClientConnection::WaitForRequests() {
   } else if (COMMAND("PASV")) {
 
     // To be implemented by students
-    passv();
+    pasv();
   } else if (COMMAND("STOR") ) {
 
     // To be implemented by students
@@ -247,7 +247,7 @@ void ClientConnection::retr(void) {
   }
 }
 
-void ClientConnection::passv(void) {
+void ClientConnection::pasv(void) {
   passive = true;
 
   struct sockaddr_in sin, sock_address;

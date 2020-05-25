@@ -17,7 +17,7 @@ class ClientConnection {
    void stop();
    void port(void);
    void retr(void);
-   void passv(void);
+   void pasv(void);
    void stor(void);
    void list(void);
 
